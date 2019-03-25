@@ -92,6 +92,7 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
     private EventDoubleClickListener eventDoubleClickListener;
     private CalendarDoubleClickListener calendarDoubleClickListener;
     private TableLongPressListener tableLongPressListener;
+    private EventDragListener eventDragListener;
 
     private boolean isScale = false;
     private boolean isFited = false;
@@ -147,6 +148,14 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
     private TextPaint columnHeaderTextPaint;
     private TextPaint eventTextPaint;
     private Typeface defaultBoldTypeface;
+
+    public EventDragListener getEventDragListener() {
+        return eventDragListener;
+    }
+
+    public void setEventDragListener(EventDragListener eventDragListener) {
+        this.eventDragListener = eventDragListener;
+    }
 
     private enum ScrollDirection{
         RIGHT, LEFT, NONE
@@ -277,7 +286,7 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
             float eventX = e.getX();
             float eventY = e.getY();
             int columnIndex = (int) (currentLeftColumnIndex + Math.floor((eventX - rowHeaderWidth) / columnWidth));
-            Log.i("DRAG", String.format("column index: %d, left: %d", columnIndex, currentLeftColumnIndex));
+
             ArrayList<TableEvent> columnEvents = events.get(columnIndex);
             if(columnEvents!=null){
 
@@ -350,7 +359,7 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
                 case DragEvent.ACTION_DRAG_LOCATION:
                     //check x
                     int columnsDrag = (int) Math.floor((event.getX() - startDragX) / columnWidth);
-                    Log.i("DRAG", String.format("columns drag: %d", columnsDrag));
+
                     if(columnsDrag!=0) {
                         ArrayList<TableEvent> tableEvents = events.get(dragColumnIndex);
                         tableEvents.remove(draggedEvent);
@@ -374,6 +383,9 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
                 case DragEvent.ACTION_DROP:
                     return true;
                 case DragEvent.ACTION_DRAG_ENDED:
+                    if(eventDragListener!=null){
+                        eventDragListener.afterEventDrag(draggedEvent.getEvent());
+                    }
                     draggedEvent = null;
                     isDragEvent = false;
                     invalidate();
@@ -440,7 +452,6 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
 
         calculateRowHeader();
         calculateColumnHeader();
-        //calculateEventText();
     }
 
     @Override
@@ -545,24 +556,9 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
                         backgroundPaint.setColor(tableEvent.event.getColor());
                         canvas.clipRect(Math.max(rowHeaderWidth, currentColumnLeft), Math.max(eventTop - positionY, columnHeaderHeight), currentColumnLeft + columnWidth, eventBottom - positionY, Region.Op.REPLACE);
                         canvas.drawRect(currentColumnLeft, Math.max(eventTop - positionY, columnHeaderHeight), currentColumnLeft + columnWidth, eventBottom - positionY, backgroundPaint);
-                        /*measuredChars = eventTextPaint.breakText(tableEvent.event.getName(), true, columnWidth - eventTextPadding * 2, new float[]{});
-                        eventTextPaint.setTypeface(defaultBoldTypeface);
-                        if(eventTextHeight + eventTextPadding <= rowHeight) {
-                            canvas.drawText(tableEvent.event.getName(), 0, measuredChars, currentColumnLeft + eventTextPadding, eventTop - positionY + eventTextHeight + eventTextPadding, eventTextPaint);
-                        }
-                        String description = tableEvent.event.getDescription();
-                        String[] desc = description.split("\n");
-                        int eventTextStringIndex = 3;
-                        eventTextPaint.setTypeface(defaultNormalTypeface);
-                        for(String descString:desc){
-                            if((eventTextHeight + eventTextPadding) * eventTextStringIndex <= rowHeight) {
-                                measuredChars = eventTextPaint.breakText(descString, true, columnWidth - eventTextPadding * 2, new float[]{});
-                                canvas.drawText(descString, 0, measuredChars, currentColumnLeft + eventTextPadding, eventTop - positionY + (eventTextHeight + eventTextPadding) * eventTextStringIndex, eventTextPaint);
-                                eventTextStringIndex++;
-                            } else break;
-                        }*/
+
                         // draw event text
-                        eventText = tableEvent.getEvent().getName() + '\n' + tableEvent.getEvent().getDescription();
+                        eventText = tableEvent.getEvent().getName();
                         StaticLayout textLayout = new StaticLayout(eventText, eventTextPaint, (int) columnWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                         canvas.save();
 
@@ -620,9 +616,7 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
             }
             if (positionY < 0) {
                 positionY = 0;
-            }/* else if (positionY > (tableHeight - viewHeight + columnHeaderHeight)) {
-                positionY = tableHeight - viewHeight + columnHeaderHeight;
-            }*/
+            }
             checkCurrentPeriodIndex();
             ViewCompat.postInvalidateOnAnimation(this);
         }
@@ -656,12 +650,10 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
         eventTextPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
 
         defaultBoldTypeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD);
-        //defaultNormalTypeface = Typeface.create(Typeface.MONOSPACE, Typeface.NORMAL);
 
         calculateRows();
         calculateRowHeader();
         calculateColumnHeader();
-        //calculateEventText();
 
         updateToday();
         goToDate(today);
@@ -692,9 +684,6 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
         currentLeftColumnIndex = dateToIndex(date);
         positionX = currentLeftColumnIndex * columnWidth;
         positionY = getTimePositionFromDate(date);
-        /*if (positionY > (tableHeight - viewHeight + columnHeaderHeight)) {
-            positionY = tableHeight - viewHeight + columnHeaderHeight;
-        }*/
         invalidate();
     }
 
@@ -750,15 +739,8 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
         columnHeaderHeight = columnHeaderTextHeight + columnHeaderPadding * 2;
     }
 
-    /*private void calculateEventText() {
-        Rect eventTextBounds = new Rect();
-        eventTextPaint.getTextBounds("Iy", 0, 1, eventTextBounds);
-        eventTextHeight = eventTextBounds.bottom - eventTextBounds.top;
-    }*/
-
     private void calculateColumnIndex(){
         scrollDaysDifference = (int) Math.floor(positionX / columnWidth);
-        Log.i("SCROLL", String.format("days: %d, posX: %f, column: %f", scrollDaysDifference, positionX, columnWidth));
         currentLeftColumnIndex = todayIndex + scrollDaysDifference;
     }
 
