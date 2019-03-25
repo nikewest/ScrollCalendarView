@@ -277,6 +277,7 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
             float eventX = e.getX();
             float eventY = e.getY();
             int columnIndex = (int) (currentLeftColumnIndex + Math.floor((eventX - rowHeaderWidth) / columnWidth));
+            Log.i("DRAG", String.format("column index: %d, left: %d", columnIndex, currentLeftColumnIndex));
             ArrayList<TableEvent> columnEvents = events.get(columnIndex);
             if(columnEvents!=null){
 
@@ -291,8 +292,8 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
                         draggedEvent = tableEvent;
                         isDragEvent = true;
                         dragTouchOffset = eventY - eventTop + positionY;
-                        Log.i("LONG PRESS", String.format("top: %f, y: %f ,offset: %f", eventTop - positionY, eventY, dragTouchOffset));
                         startDrag(null, shadowBuilder, null, 0);
+                        return;
                     }
                 }
             }
@@ -347,14 +348,12 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
                 case DragEvent.ACTION_DRAG_ENTERED:
                     return true;
                 case DragEvent.ACTION_DRAG_LOCATION:
-                    Log.i("DRAG", String.format("location %f,", event.getY()));
-
                     //check x
-                    int columnsDrag = (int) Math.floor((event.getX() + positionX - startDragX) / columnWidth);
+                    int columnsDrag = (int) Math.floor((event.getX() - startDragX) / columnWidth);
+                    Log.i("DRAG", String.format("columns drag: %d", columnsDrag));
                     if(columnsDrag!=0) {
                         ArrayList<TableEvent> tableEvents = events.get(dragColumnIndex);
-                        boolean removed = tableEvents.remove(draggedEvent);
-                        Log.i("DRAG", String.valueOf(removed));
+                        tableEvents.remove(draggedEvent);
                         tableEvents = events.get(dragColumnIndex + columnsDrag);
                         if (tableEvents == null) {
                             tableEvents = new ArrayList<TableEvent>();
@@ -373,10 +372,8 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
                     ViewCompat.postInvalidateOnAnimation(ScrollCalendarView.this);
                     return true;
                 case DragEvent.ACTION_DROP:
-                    Log.i("DRAG", "drop");
                     return true;
                 case DragEvent.ACTION_DRAG_ENDED:
-                    Log.i("DRAG", "ended");
                     draggedEvent = null;
                     isDragEvent = false;
                     invalidate();
@@ -720,7 +717,7 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
                 default:
                     break;
             }
-            mScroller.startScroll((int) positionX, (int) positionY, (int) (scrollDaysDifference * columnWidth - positionX), 0, 250);
+            mScroller.startScroll((int) positionX, (int) positionY, (int) (Math.ceil(scrollDaysDifference * columnWidth)) - (int) Math.floor(positionX), 0, 250);
             isFited = true;
             ViewCompat.postInvalidateOnAnimation(this);
         }
@@ -761,6 +758,7 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
 
     private void calculateColumnIndex(){
         scrollDaysDifference = (int) Math.floor(positionX / columnWidth);
+        Log.i("SCROLL", String.format("days: %d, posX: %f, column: %f", scrollDaysDifference, positionX, columnWidth));
         currentLeftColumnIndex = todayIndex + scrollDaysDifference;
     }
 

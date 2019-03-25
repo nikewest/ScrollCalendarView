@@ -22,6 +22,7 @@
         <ru.alexfitness.scrollcalendarview.ScrollCalendarView
             android:id="@+id/calendar_view"
             app:eventTextPct="2"
+            app:visibleColumnCount="4"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
