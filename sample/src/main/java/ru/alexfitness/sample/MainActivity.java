@@ -17,6 +17,8 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 
+import javax.net.ssl.HandshakeCompletedListener;
+
 import ru.alexfitness.scrollcalendarview.Event;
 import ru.alexfitness.scrollcalendarview.EventDoubleClickListener;
 import ru.alexfitness.scrollcalendarview.EventDragListener;
@@ -140,10 +142,17 @@ public class MainActivity extends AppCompatActivity {
         });
         calendar.setEventDragListener(new EventDragListener() {
             @Override
-            public void onDrop(ScrollCalendarView.EventMover eventMover) {
+            public void onDrop(final ScrollCalendarView.EventMover eventMover) {
                 Event movedEvent = eventMover.getEvent();
                 Toast.makeText(MainActivity.this, movedEvent.getDescription(), Toast.LENGTH_SHORT).show();
-                eventMover.accept();
+
+                Handler handler = new Handler();
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        eventMover.accept();
+                    }
+                }, 2000);
             }
         });
 

@@ -309,6 +309,7 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
                             return;
                         }
                         isDragEvent = true;
+                        initialDragEvent.setPicked(true);
                         dragTouchOffset = eventY - eventTop + positionY;
                         startDrag(null, shadowBuilder, null, 0);
                         return;
@@ -362,6 +363,7 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
         public boolean onDrag(View v, DragEvent event) {
             switch(event.getAction()){
                 case DragEvent.ACTION_DRAG_STARTED:
+                    invalidate();
                     return true;
                 case DragEvent.ACTION_DRAG_ENTERED:
                     return true;
@@ -391,17 +393,19 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
                     draggedEvent.setHours((byte) actualDate.getHours());
                     draggedEvent.setMinutes((byte) actualDate.getMinutes());
                     draggedEvent.setSeconds((byte) actualDate.getSeconds());
-                    ViewCompat.postInvalidateOnAnimation(ScrollCalendarView.this);
+                    invalidate();
                     return true;
                 case DragEvent.ACTION_DROP:
+                    //initialDragEvent.setPicked(false);
                     if(eventDragListener!=null){
+                        setWaitingState(true);
                         eventDragListener.onDrop(new EventMover(initialDragEvent, draggedEvent, initialDragColumnIndex, dragColumnIndex));
                     }
                     return true;
                 case DragEvent.ACTION_DRAG_ENDED:
-                    draggedEvent = null;
+                    /*draggedEvent = null;
                     isDragEvent = false;
-                    invalidate();
+                    invalidate();*/
                     return true;
             };
             return false;
@@ -563,6 +567,10 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
                 currentColumnLeft = rowHeaderWidth + columnWidth * columnIndex - columnOffset;
                 for(TableEvent tableEvent : currentColumnEvents){
 
+                    if(tableEvent.isPicked()){
+                        continue;
+                    }
+
                     eventTop = tableEvent.getTop(rowHeight) + columnHeaderHeight;
                     eventBottom = eventTop + tableEvent.getLength(rowHeight);
                     if(!(((positionY + viewHeight) < eventTop) || (positionY + columnHeaderHeight) > eventBottom)){
@@ -578,6 +586,7 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
                         canvas.translate(currentColumnLeft + eventTextPadding, eventTop - positionY + eventTextPadding);
                         textLayout.draw(canvas);
                         canvas.restore();
+
                     }
                 }
             }
@@ -939,6 +948,7 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
         private byte minutes;
         private byte seconds;
         private long length; //in seconds
+        private boolean picked = false;
 
         TableEvent(Event event){
             if(event.getStart()==null || event.getEnd()==null){
@@ -1010,6 +1020,14 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
         public void setEvent(Event event) {
             this.event = event;
         }
+
+        public boolean isPicked() {
+            return picked;
+        }
+
+        public void setPicked(boolean picked) {
+            this.picked = picked;
+        }
     }
 
     public class EventMover {
@@ -1018,6 +1036,7 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
         private TableEvent newEvent;
         private int oldIndex;
         private int newIndex;
+
 
         protected EventMover(TableEvent oldEvent, TableEvent newEvent, int oldIndex, int newIndex){
             this.oldEvent = oldEvent;
@@ -1034,9 +1053,20 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
 
         public void decline(){
             //do nothing
+            setWaitingState(false);
+            oldEvent.setPicked(false);
+            draggedEvent = null;
+            isDragEvent = false;
+            invalidate();
         }
 
         public void accept(){
+            //move event
+            setWaitingState(false);
+            oldEvent.setPicked(false);
+            draggedEvent = null;
+            isDragEvent = false;
+
             ArrayList<TableEvent> tableEvents = events.get(oldIndex);
             tableEvents.remove(oldEvent);
 
@@ -1063,6 +1093,7 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
             addTableEvent(newEvent.getEvent());
             invalidate();
         }
+
     }
 
     private void addTableEvent(Event event) {
