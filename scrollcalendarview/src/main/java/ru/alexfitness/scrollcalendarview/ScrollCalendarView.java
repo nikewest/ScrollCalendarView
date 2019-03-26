@@ -77,7 +77,9 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
 
     private float startDragX = 0; //x
     private int dragColumnIndex;
+    private int initialDragColumnIndex;
     private TableEvent draggedEvent = null;
+    private TableEvent initialDragEvent;
     private float dragTouchOffset;
     private boolean isDragEvent = false;
     private float actualDragPosition;
@@ -297,8 +299,15 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
                     if(eventTop <= eventY + positionY && eventBottom >= eventY + positionY){
                         CustomDragShadowBuilder shadowBuilder = new CustomDragShadowBuilder();
                         startDragX = (columnIndex - currentLeftColumnIndex) * columnWidth + rowHeaderWidth;
+                        initialDragColumnIndex = columnIndex;
                         dragColumnIndex = columnIndex;
-                        draggedEvent = tableEvent;
+                        try {
+                            initialDragEvent = tableEvent;
+                            draggedEvent = (TableEvent) tableEvent.clone();
+                        } catch (CloneNotSupportedException e1) {
+                            e1.printStackTrace();
+                            return;
+                        }
                         isDragEvent = true;
                         dragTouchOffset = eventY - eventTop + positionY;
                         startDrag(null, shadowBuilder, null, 0);
@@ -358,8 +367,8 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
                     return true;
                 case DragEvent.ACTION_DRAG_LOCATION:
                     //check x
-                    int columnsDrag = (int) Math.floor((event.getX() - startDragX) / columnWidth);
 
+                    /*int columnsDrag = (int) Math.floor((event.getX() - startDragX) / columnWidth);
                     if(columnsDrag!=0) {
                         ArrayList<TableEvent> tableEvents = events.get(dragColumnIndex);
                         tableEvents.remove(draggedEvent);
@@ -371,8 +380,12 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
                         tableEvents.add(draggedEvent);
                         startDragX += columnsDrag * columnWidth;
                         dragColumnIndex += columnsDrag;
+                    }*/
+                    int columnsDrag = (int) Math.floor((event.getX() - startDragX) / columnWidth);
+                    if(columnsDrag!=0) {
+                        startDragX += columnsDrag * columnWidth;
+                        dragColumnIndex += columnsDrag;
                     }
-
                     actualDragPosition = positionY + event.getY() - dragTouchOffset - columnHeaderHeight;
                     Date actualDate = getTimeFromPoint(startDragX, actualDragPosition);
                     draggedEvent.setHours((byte) actualDate.getHours());
@@ -381,11 +394,11 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
                     ViewCompat.postInvalidateOnAnimation(ScrollCalendarView.this);
                     return true;
                 case DragEvent.ACTION_DROP:
+                    if(eventDragListener!=null){
+                        eventDragListener.onDrop(new EventMover(initialDragEvent, draggedEvent, initialDragColumnIndex, dragColumnIndex));
+                    }
                     return true;
                 case DragEvent.ACTION_DRAG_ENDED:
-                    if(eventDragListener!=null){
-                        eventDragListener.afterEventDrag(draggedEvent.getEvent());
-                    }
                     draggedEvent = null;
                     isDragEvent = false;
                     invalidate();
@@ -570,8 +583,9 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
             }
         }
 
-        //draw nowline
         canvas.clipRect(rowHeaderWidth, columnHeaderHeight, viewWidth, viewHeight, Region.Op.REPLACE);
+
+        //draw nowline
         if(currentLeftColumnIndex <= todayIndex && todayIndex <= currentLeftColumnIndex + visibleColumnCount){
             if(todayTimePosition >= positionY && todayTimePosition <= positionY + viewHeight){
                 linePaint.setColor(nowLineColor);
@@ -580,11 +594,31 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
             }
         }
 
-        //draw drag time line
-        if(isDragEvent && actualDragPosition > 0){
-            canvas.drawText(dateTimeFormatter.timeToString(draggedEvent.getHours(), draggedEvent.getMinutes()), startDragX + columnWidth / 2, actualDragPosition - positionY + columnHeaderHeight , rowHeaderTextPaint);
-        }
+        //draw drag element
+        if(isDragEvent && draggedEvent!=null) {
+            eventTop = draggedEvent.getTop(rowHeight) + columnHeaderHeight;
+            eventBottom = eventTop + draggedEvent.getLength(rowHeight);
+            currentColumnLeft = rowHeaderWidth + columnWidth * (dragColumnIndex - currentLeftColumnIndex) - columnOffset;
+            if (!(((positionY + viewHeight) < eventTop) || (positionY + columnHeaderHeight) > eventBottom)) {
+                backgroundPaint.setColor(draggedEvent.event.getColor());
+                //canvas.clipRect(Math.max(rowHeaderWidth, currentColumnLeft), Math.max(eventTop - positionY, columnHeaderHeight), currentColumnLeft + columnWidth, eventBottom - positionY, Region.Op.REPLACE);
+                canvas.drawRect(currentColumnLeft, Math.max(eventTop - positionY, columnHeaderHeight), currentColumnLeft + columnWidth, eventBottom - positionY, backgroundPaint);
 
+                // draw event text
+                eventText = draggedEvent.getEvent().getName();
+                StaticLayout textLayout = new StaticLayout(eventText, eventTextPaint, (int) columnWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                canvas.save();
+
+                canvas.translate(currentColumnLeft + eventTextPadding, eventTop - positionY + eventTextPadding);
+                textLayout.draw(canvas);
+                canvas.restore();
+            }
+
+            //draw drag time line
+            if(actualDragPosition > 0){
+                canvas.drawText(dateTimeFormatter.timeToString(draggedEvent.getHours(), draggedEvent.getMinutes()), startDragX + columnWidth / 2, actualDragPosition - positionY + columnHeaderHeight , rowHeaderTextPaint);
+            }
+        }
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -897,7 +931,7 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
 
     // TABLE EVENT
 
-    private class TableEvent {
+    private class TableEvent implements Cloneable{
 
         private Event event;
 
@@ -918,6 +952,11 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
             setSeconds((byte) calendar.get(Calendar.SECOND));
             long timeDiff = event.getEnd().getTime() - event.getStart().getTime();
             setLength(timeDiff / 1000);
+        }
+
+        @Override
+        protected Object clone() throws CloneNotSupportedException {
+            return super.clone();
         }
 
         public byte getHours() {
@@ -970,6 +1009,59 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
 
         public void setEvent(Event event) {
             this.event = event;
+        }
+    }
+
+    public class EventMover {
+
+        private TableEvent oldEvent;
+        private TableEvent newEvent;
+        private int oldIndex;
+        private int newIndex;
+
+        protected EventMover(TableEvent oldEvent, TableEvent newEvent, int oldIndex, int newIndex){
+            this.oldEvent = oldEvent;
+            this.newEvent = newEvent;
+            this.oldIndex = oldIndex;
+            this.newIndex = newIndex;
+        }
+
+        public Event getEvent(){
+            if(oldEvent!=null){
+                return oldEvent.getEvent();
+            } else return null;
+        }
+
+        public void decline(){
+            //do nothing
+        }
+
+        public void accept(){
+            ArrayList<TableEvent> tableEvents = events.get(oldIndex);
+            tableEvents.remove(oldEvent);
+
+            Date newDate = indexToDate(newIndex);
+            Date startDate = newEvent.getEvent().getStart();
+            Date endDate = newEvent.getEvent().getEnd();
+            int newYear = newDate.getYear();
+            int newMonth = newDate.getMonth();
+            int newDay = newDate.getDate();
+            startDate.setYear(newYear);
+            startDate.setMonth(newMonth);
+            startDate.setDate(newDay);
+            startDate.setHours(newEvent.getHours());
+            startDate.setMinutes(newEvent.getMinutes());
+            startDate.setSeconds(newEvent.getSeconds());
+            endDate.setTime(startDate.getTime() + newEvent.length * 1000);
+            /*try {
+                newEvent.getEvent().setStart(startDate);
+                newEvent.getEvent().setEnd(endDate);
+            } catch (Event.EventDatesException e) {
+                e.printStackTrace();
+            }*/
+
+            addTableEvent(newEvent.getEvent());
+            invalidate();
         }
     }
 

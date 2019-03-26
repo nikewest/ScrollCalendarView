@@ -19,6 +19,7 @@ import java.util.Date;
 
 import ru.alexfitness.scrollcalendarview.Event;
 import ru.alexfitness.scrollcalendarview.EventDoubleClickListener;
+import ru.alexfitness.scrollcalendarview.EventDragListener;
 import ru.alexfitness.scrollcalendarview.EventSingleClickListener;
 import ru.alexfitness.scrollcalendarview.EventsLoader;
 import ru.alexfitness.scrollcalendarview.LoadEventsListener;
@@ -135,6 +136,14 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     progressBar.setVisibility(View.GONE);
                 }
+            }
+        });
+        calendar.setEventDragListener(new EventDragListener() {
+            @Override
+            public void onDrop(ScrollCalendarView.EventMover eventMover) {
+                Event movedEvent = eventMover.getEvent();
+                Toast.makeText(MainActivity.this, movedEvent.getDescription(), Toast.LENGTH_SHORT).show();
+                eventMover.accept();
             }
         });
 

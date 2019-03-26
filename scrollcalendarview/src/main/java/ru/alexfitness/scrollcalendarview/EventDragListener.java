@@ -2,5 +2,6 @@ package ru.alexfitness.scrollcalendarview;
 
 public interface EventDragListener {
 
-    void afterEventDrag(Event event);
+    void onDrop(ScrollCalendarView.EventMover eventMover);
+
 }
