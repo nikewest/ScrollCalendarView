@@ -17,14 +17,12 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 
-import javax.net.ssl.HandshakeCompletedListener;
-
 import ru.alexfitness.scrollcalendarview.Event;
 import ru.alexfitness.scrollcalendarview.EventDoubleClickListener;
 import ru.alexfitness.scrollcalendarview.EventDragListener;
 import ru.alexfitness.scrollcalendarview.EventSingleClickListener;
 import ru.alexfitness.scrollcalendarview.EventsLoader;
-import ru.alexfitness.scrollcalendarview.LoadEventsListener;
+import ru.alexfitness.scrollcalendarview.EventsLoaderListener;
 import ru.alexfitness.scrollcalendarview.ScrollCalendarView;
 import ru.alexfitness.scrollcalendarview.CalendarDoubleClickListener;
 import ru.alexfitness.scrollcalendarview.TableLongPressListener;
@@ -72,10 +70,10 @@ public class MainActivity extends AppCompatActivity {
             };
 
             ArrayList<Event> events = new ArrayList<>();
-            private LoadEventsListener loadEventsListener;
+            private EventsLoaderListener eventsLoaderListener;
 
             @Override
-            public void loadEvents(Date startDate, Date endDate) {
+            public void loadEvents(Calendar startDate, Calendar endDate) {
                 /*events.clear();
                 Event event = new Event();
                 Calendar calendar = Calendar.getInstance();
@@ -90,13 +88,13 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public void setOnLoadListener(LoadEventsListener loadEventsListener) {
-                this.loadEventsListener = loadEventsListener;
+            public void setOnLoadListener(EventsLoaderListener eventsLoaderListener) {
+                this.eventsLoaderListener = eventsLoaderListener;
             }
 
             @Override
             public void onLoad() {
-                loadEventsListener.onLoad(events);
+                eventsLoaderListener.onLoad(events);
             }
 
         });

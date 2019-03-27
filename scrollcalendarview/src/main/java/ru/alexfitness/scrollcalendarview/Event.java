@@ -14,6 +14,12 @@ public class Event {
     private String description;
     private int color = Color.YELLOW;
 
+    private class EventWrongDatesException extends Exception {
+        public EventWrongDatesException(){
+            super("Wrong dates for event!");
+        }
+    }
+
     public String getUid() {
         return uid;
     }
@@ -30,32 +36,20 @@ public class Event {
         this.id = id;
     }
 
-    public class EventDatesException extends Exception{
-        EventDatesException(){
-            super("Incompatible start and end dates");
-        };
-    }
-
     public Date getStart() {
         return start;
     }
 
-    public void setStart(Date start) throws EventDatesException {
+    public void setStart(Date start){
         this.start = start;
-        if(!checkDates()){
-            throw new EventDatesException();
-        }
     }
 
     public Date getEnd() {
         return end;
     }
 
-    public void setEnd(Date end) throws EventDatesException {
+    public void setEnd(Date end){
         this.end = end;
-        if(!checkDates()){
-            throw new EventDatesException();
-        }
     }
 
     public String getName() {
@@ -78,7 +72,7 @@ public class Event {
         return color;
     }
 
-    private boolean checkDates(){
+    public boolean checkDates(){
         if(start!=null && end!=null){
             if(start.after(end) || start.getYear()!=end.getYear() || start.getMonth()!=end.getMonth() || start.getDate()!=end.getDate()){
                 return false;

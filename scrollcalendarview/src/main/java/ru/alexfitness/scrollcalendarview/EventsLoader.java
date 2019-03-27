@@ -1,11 +1,11 @@
 package ru.alexfitness.scrollcalendarview;
 
-import java.util.Date;
+import java.util.Calendar;
 
 public interface EventsLoader {
 
-    void loadEvents(Date startDate, Date endDate);
-    void setOnLoadListener(LoadEventsListener loadEventsListener);
+    void loadEvents(Calendar startDate, Calendar endDate);
+    void setOnLoadListener(EventsLoaderListener eventsLoaderListener);
     void onLoad();
 
 }

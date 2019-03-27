@@ -17,7 +17,6 @@ import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.util.AttributeSet;
 
-import android.util.Log;
 import android.util.SparseArray;
 import android.view.DragEvent;
 import android.view.GestureDetector;
@@ -32,7 +31,10 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
-public class ScrollCalendarView extends View implements LoadEventsListener {
+public class ScrollCalendarView extends View implements EventsLoaderListener {
+
+    //TODO events interceptions and ovelaps
+    //TODO refactor scaling
 
     private static int CUSTOM_ROW_HEIGHT = 100;
     private static int CUSTOM_TIME_STEP = 60;
@@ -99,7 +101,9 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
     private boolean isScale = false;
     private boolean isFited = false;
     private EventsLoader eventsLoader;
+
     private SparseArray<ArrayList<TableEvent>> events = new SparseArray<ArrayList<TableEvent>>();
+
     private boolean waitingState = false;
     private WaitingStateListener waitingStateListener;
 
@@ -388,7 +392,9 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
                         startDragX += columnsDrag * columnWidth;
                         dragColumnIndex += columnsDrag;
                     }
-                    actualDragPosition = positionY + event.getY() - dragTouchOffset - columnHeaderHeight;
+                    //actualDragPosition = positionY + event.getY() - dragTouchOffset - columnHeaderHeight;
+                    actualDragPosition = Math.max(0, Math.min(tableHeight - draggedEvent.getLength(rowHeight), positionY + event.getY() - dragTouchOffset - columnHeaderHeight));
+
                     Date actualDate = getTimeFromPoint(startDragX, actualDragPosition);
                     draggedEvent.setHours((byte) actualDate.getHours());
                     draggedEvent.setMinutes((byte) actualDate.getMinutes());
@@ -717,8 +723,8 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
         if(eventsLoader!=null){
             setWaitingState(true);
             events.clear();
-            Date startLoadDate = indexToDate(currentPeriodIndex - periodLength);
-            Date endLoadDate = indexToDate(currentPeriodIndex + periodLength);
+            Calendar startLoadDate = indexToDate(currentPeriodIndex - periodLength);
+            Calendar endLoadDate = indexToDate(currentPeriodIndex + periodLength);
             eventsLoader.loadEvents(startLoadDate, endLoadDate);
         }
     }
@@ -813,11 +819,11 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
         return calendar.get(Calendar.YEAR) * 1000 + calendar.get(Calendar.DAY_OF_YEAR);
     }
 
-    private Date indexToDate(int index){
+    private Calendar indexToDate(int index){
         Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.YEAR, index / 1000);
         calendar.set(Calendar.DAY_OF_YEAR, index % 1000);
-        return calendar.getTime();
+        return calendar;
     }
 
     public int getTimePositionFromDate(Date date){
@@ -1060,40 +1066,31 @@ public class ScrollCalendarView extends View implements LoadEventsListener {
             invalidate();
         }
 
-        public void accept(){
+        public void accept() {
             //move event
             setWaitingState(false);
             oldEvent.setPicked(false);
             draggedEvent = null;
             isDragEvent = false;
 
-            ArrayList<TableEvent> tableEvents = events.get(oldIndex);
-            tableEvents.remove(oldEvent);
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(indexToDate(newIndex).getTime());
+            calendar.set(Calendar.HOUR_OF_DAY, newEvent.getHours());
+            calendar.set(Calendar.MINUTE, newEvent.getMinutes());
+            calendar.set(Calendar.SECOND, newEvent.getSeconds());
+            newEvent.getEvent().setStart(calendar.getTime());
 
-            Date newDate = indexToDate(newIndex);
-            Date startDate = newEvent.getEvent().getStart();
-            Date endDate = newEvent.getEvent().getEnd();
-            int newYear = newDate.getYear();
-            int newMonth = newDate.getMonth();
-            int newDay = newDate.getDate();
-            startDate.setYear(newYear);
-            startDate.setMonth(newMonth);
-            startDate.setDate(newDay);
-            startDate.setHours(newEvent.getHours());
-            startDate.setMinutes(newEvent.getMinutes());
-            startDate.setSeconds(newEvent.getSeconds());
-            endDate.setTime(startDate.getTime() + newEvent.length * 1000);
-            /*try {
-                newEvent.getEvent().setStart(startDate);
-                newEvent.getEvent().setEnd(endDate);
-            } catch (Event.EventDatesException e) {
-                e.printStackTrace();
-            }*/
+            calendar.add(Calendar.SECOND, (int) newEvent.getLength());
+            newEvent.getEvent().setEnd(calendar.getTime());
 
-            addTableEvent(newEvent.getEvent());
+            if(newEvent.getEvent().checkDates()){
+                ArrayList<TableEvent> tableEvents = events.get(oldIndex);
+                tableEvents.remove(oldEvent);
+                addTableEvent(newEvent.getEvent());
+            }
+
             invalidate();
         }
-
     }
 
     private void addTableEvent(Event event) {
