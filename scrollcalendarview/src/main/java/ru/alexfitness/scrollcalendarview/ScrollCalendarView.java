@@ -33,8 +33,9 @@ import java.util.Locale;
 
 public class ScrollCalendarView extends View implements EventsLoaderListener {
 
-    //TODO events interceptions and ovelaps
     //TODO refactor scaling
+    //TODO refactor drag n drop
+    //TODO refactor events keeping
 
     private static int CUSTOM_ROW_HEIGHT = 100;
     private static int CUSTOM_TIME_STEP = 60;
