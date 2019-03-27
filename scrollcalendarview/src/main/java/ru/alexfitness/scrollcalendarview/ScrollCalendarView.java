@@ -1066,7 +1066,7 @@ public class ScrollCalendarView extends View implements EventsLoaderListener {
             invalidate();
         }
 
-        public void accept() {
+        public void accept() throws Event.EventsIntersectionException {
             //move event
             setWaitingState(false);
             oldEvent.setPicked(false);
@@ -1085,36 +1085,51 @@ public class ScrollCalendarView extends View implements EventsLoaderListener {
 
             if(newEvent.getEvent().checkDates()){
                 ArrayList<TableEvent> tableEvents = events.get(oldIndex);
+                try {
+                    addTableEvent(newEvent.getEvent());
+                } catch (Event.EventsIntersectionException e) {
+                    invalidate();
+                    throw e;
+                }
                 tableEvents.remove(oldEvent);
-                addTableEvent(newEvent.getEvent());
             }
 
             invalidate();
         }
     }
 
-    private void addTableEvent(Event event) {
+    private void addTableEvent(Event event) throws Event.EventsIntersectionException {
         ArrayList<TableEvent> tableEvents = events.get(dateToIndex(event.getStart()));
         if(tableEvents==null){
             tableEvents = new ArrayList<>();
             events.put(dateToIndex(event.getStart()), tableEvents);
         }
         if(event.getStart()!=null || event.getEnd()!=null){
+            //search intersections
+            for(TableEvent curEvent: tableEvents){
+                if(Event.eventsIntersect(curEvent.getEvent(), event)){
+                    throw new Event.EventsIntersectionException();
+                }
+            }
             TableEvent tableEvent = new TableEvent(event);
             tableEvents.add(tableEvent);
         }
     }
 
-
     // INTERFACE IMPLEMENTATIONS
 
     @Override
-    public void onLoad(ArrayList<Event> events) {
-        for (Event event : events) {
-            addTableEvent(event);
+    public void onLoad(ArrayList<Event> events) throws Event.EventsIntersectionException {
+        try {
+            for (Event event : events) {
+                addTableEvent(event);
+            }
+        } catch (Event.EventsIntersectionException e) {
+            throw e;
+        } finally {
+            setWaitingState(false);
+            invalidate();
         }
-        setWaitingState(false);
-        invalidate();
     }
 
 }

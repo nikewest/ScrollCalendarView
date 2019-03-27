@@ -54,14 +54,24 @@ public class MainActivity extends AppCompatActivity {
                 public void run() {
                     events.clear();
                     try {
-                        Event event = new Event();
+                        Event event1 = new Event();
                         Calendar calendar = Calendar.getInstance();
-                        event.setStart(calendar.getTime());
+                        event1.setStart(calendar.getTime());
                         calendar.add(Calendar.HOUR, 1);
-                        event.setEnd(calendar.getTime());
-                        event.setName("12345 Какое то наименование!");
-                        event.setDescription("Event for testing \nContains multiply String \nУже третья строка");
-                        events.add(event);
+                        event1.setEnd(calendar.getTime());
+                        event1.setName("событие 1");
+                        event1.setDescription("Event for testing \nContains multiply String \nУже третья строка");
+                        events.add(event1);
+
+                        Event event2 = new Event();
+                        calendar = Calendar.getInstance();
+                        calendar.add(Calendar.HOUR, 3);
+                        event2.setStart(calendar.getTime());
+                        calendar.add(Calendar.HOUR, 1);
+                        event2.setEnd(calendar.getTime());
+                        event2.setName("событие 2");
+                        event2.setDescription("Event for testing \nContains multiply String \nУже третья строка");
+                        events.add(event2);
                     }catch(Exception ex){
                         ex.printStackTrace();
                     }
@@ -94,7 +104,11 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onLoad() {
-                eventsLoaderListener.onLoad(events);
+                try {
+                    eventsLoaderListener.onLoad(events);
+                } catch (Event.EventsIntersectionException e) {
+                    Toast.makeText(MainActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                }
             }
 
         });
@@ -148,7 +162,11 @@ public class MainActivity extends AppCompatActivity {
                 handler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        eventMover.accept();
+                        try {
+                            eventMover.accept();
+                        } catch (Event.EventsIntersectionException e) {
+                            Toast.makeText(MainActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
                     }
                 }, 2000);
             }

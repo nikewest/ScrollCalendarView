@@ -20,6 +20,12 @@ public class Event {
         }
     }
 
+    public static class EventsIntersectionException extends Exception {
+        public EventsIntersectionException() {
+            super("Events intersection found!");
+        }
+    }
+
     public String getUid() {
         return uid;
     }
@@ -83,5 +89,12 @@ public class Event {
 
     public void setColor(int color) {
         this.color = color;
+    }
+
+    public static boolean eventsIntersect(Event event1, Event event2){
+        if(event1 == event2){
+            return false;
+        }
+        return event2.getEnd().after(event1.getStart()) && event1.getEnd().after(event2.getStart());
     }
 }
