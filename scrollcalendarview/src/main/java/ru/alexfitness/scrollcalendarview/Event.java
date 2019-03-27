@@ -12,7 +12,7 @@ public class Event {
     private Date end;
     private String name;
     private String description;
-    private int color = Color.YELLOW;
+    private int color = Color.WHITE;
 
     private class EventWrongDatesException extends Exception {
         public EventWrongDatesException(){
