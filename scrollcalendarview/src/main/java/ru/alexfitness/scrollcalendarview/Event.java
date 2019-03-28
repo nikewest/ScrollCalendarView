@@ -14,18 +14,6 @@ public class Event {
     private String description;
     private int color = Color.WHITE;
 
-    private class EventWrongDatesException extends Exception {
-        public EventWrongDatesException(){
-            super("Wrong dates for event!");
-        }
-    }
-
-    public static class EventsIntersectionException extends Exception {
-        public EventsIntersectionException() {
-            super("Events intersection found!");
-        }
-    }
-
     public String getUid() {
         return uid;
     }
@@ -46,7 +34,7 @@ public class Event {
         return start;
     }
 
-    public void setStart(Date start){
+    public void setStart(Date start) {
         this.start = start;
     }
 
@@ -54,7 +42,7 @@ public class Event {
         return end;
     }
 
-    public void setEnd(Date end){
+    public void setEnd(Date end) {
         this.end = end;
     }
 
@@ -78,6 +66,40 @@ public class Event {
         return color;
     }
 
+    public void setColor(int color) {
+        this.color = color;
+    }
+
+    public static class EventsIntersectionException extends Exception {
+        public EventsIntersectionException() {
+            super("Events intersection found!");
+        }
+    }
+
+    public Event(String uid, Date start, Date end, String name, String description){
+        this.uid = uid;
+        this.start = start;
+        this.end = end;
+        this.name = name;
+        this.description = description;
+
+        if(!checkDates()){
+            throw new IllegalArgumentException();
+        }
+    }
+
+    public Event(long id, Date start, Date end, String name, String description) {
+        this.id = id;
+        this.start = start;
+        this.end = end;
+        this.name = name;
+        this.description = description;
+
+        if(!checkDates()){
+            throw new IllegalArgumentException();
+        }
+    }
+
     public boolean checkDates(){
         if(start!=null && end!=null){
             if(start.after(end) || start.getYear()!=end.getYear() || start.getMonth()!=end.getMonth() || start.getDate()!=end.getDate()){
@@ -85,10 +107,6 @@ public class Event {
             }
         }
         return true;
-    }
-
-    public void setColor(int color) {
-        this.color = color;
     }
 
     public static boolean eventsIntersect(Event event1, Event event2){

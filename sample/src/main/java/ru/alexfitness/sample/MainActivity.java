@@ -1,6 +1,7 @@
 package ru.alexfitness.sample;
 
 import android.content.DialogInterface;
+import android.graphics.Color;
 import android.os.Handler;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -54,24 +55,19 @@ public class MainActivity extends AppCompatActivity {
                 public void run() {
                     events.clear();
                     try {
-                        Event event1 = new Event();
-                        Calendar calendar = Calendar.getInstance();
-                        event1.setStart(calendar.getTime());
-                        calendar.add(Calendar.HOUR, 1);
-                        event1.setEnd(calendar.getTime());
-                        event1.setName("событие 1");
-                        event1.setDescription("Event for testing \nContains multiply String \nУже третья строка");
-                        events.add(event1);
 
-                        Event event2 = new Event();
-                        calendar = Calendar.getInstance();
-                        calendar.add(Calendar.HOUR, 3);
-                        event2.setStart(calendar.getTime());
+                        Calendar calendar = Calendar.getInstance();
+                        Date start = calendar.getTime();
                         calendar.add(Calendar.HOUR, 1);
-                        event2.setEnd(calendar.getTime());
-                        event2.setName("событие 2");
-                        event2.setDescription("Event for testing \nContains multiply String \nУже третья строка");
-                        events.add(event2);
+                        Date end = calendar.getTime();
+                        events.add(new Event("0", start, end, "Событие 1", "Описание события 1"));
+
+                        calendar.add(Calendar.HOUR, 3);
+                        start = calendar.getTime();
+                        calendar.add(Calendar.HOUR, 1);
+                        end = calendar.getTime();
+                        events.add(new Event("1", start, end, "Событие 2", "Описание события 2"));
+
                     }catch(Exception ex){
                         ex.printStackTrace();
                     }
