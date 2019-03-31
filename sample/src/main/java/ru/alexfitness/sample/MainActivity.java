@@ -80,16 +80,6 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void loadEvents(Calendar startDate, Calendar endDate) {
-                /*events.clear();
-                Event event = new Event();
-                Calendar calendar = Calendar.getInstance();
-                event.setStart(calendar.getTime());
-                calendar.add(Calendar.HOUR, 1);
-                event.setEnd(calendar.getTime());
-                event.setName("Какое то наименование!");
-                event.setDescription("Event for testing \nContains multiply String \nУже третья строка");
-                events.add(event);
-                onLoad();*/
                 eventHandler.postDelayed(eventCreator, 2000);
             }
 
