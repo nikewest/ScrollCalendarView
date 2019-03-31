@@ -62,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
                         Date end = calendar.getTime();
                         events.add(new Event("0", start, end, "Событие 1", "Описание события 1"));
 
-                        calendar.add(Calendar.HOUR, 3);
+                        calendar.add(Calendar.HOUR, 2);
                         start = calendar.getTime();
                         calendar.add(Calendar.HOUR, 1);
                         end = calendar.getTime();
